@@ -1,0 +1,204 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<groupId>com.streamsets</groupId>
+	<artifactId>gdprPurger</artifactId>
+	<version>0.0.1-SNAPSHOT</version>
+	<name>gdprPurger</name>
+	<description>GDPR purger for Zendesk</description>
+	<properties>
+		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+		<maven.compiler.source>1.8</maven.compiler.source>
+		<maven.compiler.target>1.8</maven.compiler.target>
+		<dependency-check-maven.version>5.3.2</dependency-check-maven.version>
+		 
+		<!-- Hibernate / JPA -->
+		<spring-framework.version>4.0.3.RELEASE</spring-framework.version> 		
+		<hibernate.version>4.3.5.Final</hibernate.version> 
+		
+		<!-- LOG -->		
+		<support.library.version>1.2</support.library.version>
+		<slf4j.version>2.18.0</slf4j.version>
+		<project.build.directory>../build/</project.build.directory>
+		<mysql-connector>5.1.49</mysql-connector>
+		<fully.qualified.main.class>com.streamsets.gdprPurger.GDPRpurge</fully.qualified.main.class>
+	</properties>
+
+	<dependencies>
+	
+		<dependency>
+			<groupId>com.streamsets</groupId>
+			<artifactId>SupportLibrary</artifactId>
+			<version>${support.library.version}</version>
+		</dependency>
+		
+		<dependency>
+			<groupId>org.springframework</groupId>
+			<artifactId>spring-context</artifactId>
+			<version>${spring-framework.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework</groupId>
+			<artifactId>spring-tx</artifactId>
+			<version>${spring-framework.version}</version>
+		</dependency>
+
+		<!-- Spring ORM support -->
+		<dependency>
+			<groupId>org.springframework</groupId>
+			<artifactId>spring-orm</artifactId>
+			<version>${spring-framework.version}</version>
+		</dependency>
+		
+		<dependency>
+		    <groupId>org.apache.logging.log4j</groupId>
+		    <artifactId>log4j-api</artifactId>
+		    <version>${slf4j.version}</version>
+		</dependency>
+		<dependency>
+		    <groupId>org.apache.logging.log4j</groupId>
+		    <artifactId>log4j-core</artifactId>
+		    <version>${slf4j.version}</version>
+		</dependency>
+		<dependency>
+		    <groupId>org.apache.logging.log4j</groupId>
+		    <artifactId>log4j-slf4j-impl</artifactId>
+		    <version>${slf4j.version}</version>
+		</dependency>
+
+
+		<dependency>
+			<groupId>org.hibernate</groupId>
+			<artifactId>hibernate-entitymanager</artifactId>
+			<version>${hibernate.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.hibernate</groupId>
+			<artifactId>hibernate-core</artifactId>
+			<version>${hibernate.version}</version>
+		</dependency>
+
+		<dependency>
+			<groupId>mysql</groupId>
+			<artifactId>mysql-connector-java</artifactId>
+			<version>${mysql-connector}</version>
+		</dependency>
+		<dependency>
+			<groupId>commons-dbcp</groupId>
+			<artifactId>commons-dbcp</artifactId>
+			<version>1.4</version>
+		</dependency>
+		<dependency>
+			<groupId>com.fasterxml.jackson.core</groupId>
+			<artifactId>jackson-databind</artifactId>
+			<version>2.13.2</version>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.commons</groupId>
+			<artifactId>commons-collections4</artifactId>
+			<version>4.4</version>
+		</dependency>
+		<dependency>
+			<groupId>commons-io</groupId>
+			<artifactId>commons-io</artifactId>
+			<version>2.7</version>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.commons</groupId>
+			<artifactId>commons-lang3</artifactId>
+			<version>3.9</version>
+		</dependency>
+	</dependencies>
+
+	<build>
+	<resources>
+        <resource>
+            <directory>src/main/resources</directory>
+            <excludes>
+                <exclude>*.*</exclude>
+            </excludes>
+            <filtering>false</filtering>
+        </resource>
+    </resources>
+		<plugins>
+			<plugin>
+    <groupId>org.apache.maven.plugins</groupId>
+    <artifactId>maven-dependency-plugin</artifactId>
+    <executions>
+        <execution>
+            <id>copy-dependencies</id>
+            <phase>prepare-package</phase>
+            <goals>
+                <goal>copy-dependencies</goal>
+            </goals>
+            <configuration>
+                <outputDirectory>${project.build.directory}/lib</outputDirectory>
+                <overWriteReleases>false</overWriteReleases>
+                <overWriteSnapshots>false</overWriteSnapshots>
+                <overWriteIfNewer>true</overWriteIfNewer>
+            </configuration>
+        </execution>
+    </executions>
+</plugin>
+<plugin>
+    <artifactId>maven-resources-plugin</artifactId>
+    <version>3.0.2</version>
+    <executions>
+        <execution>
+            <id>copy-resource-one</id>
+            <phase>generate-sources</phase>
+            <goals>
+                <goal>copy-resources</goal>
+            </goals>
+            <configuration>
+                <outputDirectory>${project.build.directory}/conf</outputDirectory>
+                <resources>
+                    <resource>
+                        <directory>conf</directory>
+                        <includes>
+                            <include>*</include>
+                        </includes>
+                    </resource>
+                     
+                </resources>
+            </configuration>
+        </execution>
+         <execution>
+            <id>copy-resource-two</id>
+            <phase>generate-sources</phase>
+            <goals>
+                <goal>copy-resources</goal>
+            </goals>
+            <configuration>
+                <outputDirectory>${project.build.directory}/bin</outputDirectory>
+                <resources>
+                     <resource>
+                        <directory>bin</directory>
+                        <includes>
+                            <include>*.*</include>
+                        </includes>
+                    </resource>
+                </resources>
+            </configuration>
+        </execution>
+    </executions>
+</plugin>
+<plugin>
+    <groupId>org.apache.maven.plugins</groupId>
+    <artifactId>maven-jar-plugin</artifactId>
+    <configuration>
+	<outputDirectory>${project.build.directory}/lib</outputDirectory>
+        <archive>
+            <manifest>
+                <addClasspath>true</addClasspath>
+                <classpathPrefix>./</classpathPrefix>
+                <mainClass>${fully.qualified.main.class}</mainClass>
+            </manifest>
+        </archive>
+    </configuration>
+</plugin>
+		</plugins>
+	</build>
+
+</project>

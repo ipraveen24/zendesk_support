@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:aop="http://www.springframework.org/schema/aop"
+	xmlns:tx="http://www.springframework.org/schema/tx"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+		http://www.springframework.org/schema/aop http://www.springframework.org/schema/aop/spring-aop-4.0.xsd
+		http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx-4.0.xsd">
+	
+	<bean id="log4jInitializer" class="org.springframework.beans.factory.config.MethodInvokingFactoryBean" >
+	    <property name="targetClass" value="org.springframework.util.Log4jConfigurer" />
+	    <property name="targetMethod" value="initLogging" />
+	    <property name="arguments">
+	        <list>
+	            <value>../conf/log4j.properties</value>
+	        </list>
+	    </property>
+	</bean>
+	
+	<bean class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer">
+		<property name="locations" value="../conf/application.properties"/>
+	</bean>
+	<bean id="dataSource" class="org.apache.commons.dbcp.BasicDataSource"
+		destroy-method="close">
+		<property name="driverClassName" value="com.mysql.jdbc.Driver" />
+		<property name="url" value="${db.url}" />
+		<property name="username" value="${db.username}" />
+		<property name="password" value="${db.password}" />
+	</bean>
+	<bean id="customUtils" class="com.streamsets.datapurger.util.CustomUtils">
+		<property name="email" value="${user.email}" />
+		<property name="pass" value="${user.pass}" />
+		<property name="baseZendeskUrl" value="${baseZendeskUrl}" />
+		<property name="queryDifference" value="${queryDifference}" />
+		<property name="deleteIssues" value="false" />
+		<property name="useAWScredentials" value="${user.useAWScredentials}" />	
+		
+			
+	</bean>
+<!-- Hibernate 4 SessionFactory Bean definition -->
+	<bean id="hibernate4AnnotatedSessionFactory"
+		class="org.springframework.orm.hibernate4.LocalSessionFactoryBean">
+		<property name="dataSource" ref="dataSource" />
+		<property name="annotatedClasses">
+			<list>
+				<value>com.streamsets.sqlrepo.model.SupportTicket</value>
+				<value>com.streamsets.sqlrepo.model.SMetric</value>
+			</list>
+		</property>
+		<property name="hibernateProperties">
+			<props>
+				<prop key="hibernate.dialect">org.hibernate.dialect.MySQLDialect</prop>
+				<prop key="hibernate.show_sql">false</prop>
+				<prop key="hibernate.format_sql">false</prop>
+				<prop key="hibernate.hbm2ddl.auto">update</prop>
+			</props>
+		</property>
+	</bean>
+	
+	<bean id="baseDAO" class="com.streamsets.sqlrepo.dao.BaseDAO">
+		<property name="hibernateTemplate">
+			<bean id="hibernateTemplate" class="org.springframework.orm.hibernate4.HibernateTemplate">
+				<constructor-arg ref="hibernate4AnnotatedSessionFactory"/>
+			</bean>
+		</property>
+	</bean>
+	<bean id="zenDeskRepository" parent="zendesk2mysqlBaseTransactionProxy">
+		<property name="target">
+			<bean class="com.streamsets.sqlrepo.persistence.ZenDeskRepository">
+				<property name="baseDAO" ref="baseDAO" />
+			</bean>
+		</property>
+	</bean>
+	
+	<bean id="zendesk2mysqlBaseTransactionProxy" class="org.springframework.transaction.interceptor.TransactionProxyFactoryBean" abstract="true">
+		<property name="transactionManager">
+			<bean class="org.springframework.orm.hibernate4.HibernateTransactionManager">
+				<property name="sessionFactory" ref="hibernate4AnnotatedSessionFactory" />
+					
+				
+			</bean>
+		</property>
+		<property name="transactionAttributes">
+			<props>
+				<prop key="get*">PROPAGATION_SUPPORTS,readOnly</prop>
+				<prop key="list*">PROPAGATION_SUPPORTS,readOnly</prop>
+				<prop key="*">PROPAGATION_REQUIRED,-Throwable</prop>
+			</props>
+		</property>
+		<property name="preInterceptors">
+			<list>
+				<bean class="com.streamsets.sqlrepo.persistence.TransactionFailureInterceptor" />
+			</list>
+		</property>
+	</bean>
+
+</beans>
